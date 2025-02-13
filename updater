@@ -1,0 +1,43 @@
+#!/bin/bash
+
+autoReboot="0"
+
+# Root Check
+if [ "$(id -u)" -ne 0 ]
+  then echo "Please run as root"
+  exit
+fi
+
+# Updater; checks if version exists before attempting to excecute an update
+if [[ -n "$(pacman --version 2>&1)" && $? -eq 0 ]]; then # Arch Linux
+    eval sudo pacman -Syu
+elif [[ -n "$(apt --version 2>&1)" && $? -eq 0 ]]; then # Debian
+    eval  sudo apt update && sudo apt upgrade 
+elif [[ -n "$(flatpak --version 2>&1)" && $? -eq 0 ]]; then # Flatpak
+    eval flatpak update
+elif [[ -n "$(nix-env --version 2>&1)" && $? -eq 0 ]]; then # Nix OS
+    eval "sudo nixos-rebuild switch --upgrade"
+elif [[ -n "$(portage --version 2>&1)" && $? -eq 0 ]]; then # Gentoo
+    eval "emaint -a sync && emerge --keep-going --with-bdeps=y --verbose-conflicts --ask --update --quiet --tree @world && emerge -q @preserved-rebuild && emerge --depclean -avq && eclean distfiles && eclean packages"
+elif [[ -n "$(dnf --version 2>&1)" && $? -eq 0 ]]; then # Fedora
+    eval "sudo dnf update"
+elif [[ -n "$(xbps --version)" && $? -eq 0 ]]; then # Void Linux
+    eval "xbps-install --sync --update && xbps-install -Su"
+elif [[ -n "$(apkrepos --version)" && $? -eq 0 ]]; then # Alpine Linux
+    eval "setup-apkrepos"
+fi
+
+
+# Restarting
+
+if [[ "$autoReboot" == "1" ]]; then
+    reboot
+fi
+
+read -p "Would you like to restart? [Y/N] " reboot
+if [[ "$reboot" == "Y" || "$reboot" == "y" ]]; then
+    reboot
+elif [[ "$reboot" == "N" || "$reboot" == "n" ]]; then
+    echo
+    exit
+fi
